@@ -1,2 +1,2 @@
 type,query,truth
-yes/no,Is Indiana County Pennsylvania east of Zipcode 16668?,no
+checkbox,Question: Select all options that are adjacent to and east of Zipcode 47129? You may choose one or more options. Options: a. Zipcode 40212 b. Zipcode 47130 c. Zipcode 40211 d. Zipcode 47172 e. None of the above,e

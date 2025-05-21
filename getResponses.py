@@ -9,7 +9,7 @@ import time
 torch.cuda.empty_cache()
 
 
-FEW_SHOT_FLAG = False
+FEW_SHOT_NUM = 0
 REPEAT_FACTOR = 3
 # regex to remove non-chars in necessary
 regex = re.compile('[^a-zA-Z]')
@@ -28,7 +28,7 @@ def getYesNoResponse(query):
         responses = []
         try:
             # response = llm.generate(query + " Instruction: Respond with only 'yes' or 'no'. Do not include any other text or explanation.")  # for yes/no queries, append an extra instruction
-            response = llm.generate(query, "yes/no", FEW_SHOT_FLAG)
+            response = llm.generate(query, "yes/no", FEW_SHOT_NUM)
             response = response.replace("\n", " ").lower()
             response = regex.sub('', response)
             responses.append(response)
@@ -50,12 +50,12 @@ def getRadioResponse(query):
         responses = []
         try:
             # response = llm.generate(query + " \"Instruction: Respond with only the single letter (a-e) corresponding to the correct option. Do not include any explanation or additional text.\"")
-            response = llm.generate(query, "radio", FEW_SHOT_FLAG)
+            response = llm.generate(query, "radio", FEW_SHOT_NUM)
             response = response.replace("\n", " ").lower()
             response = response.replace(".", "")
             response = regex.sub('', response)
-            if response not in ["a","b","c","d","e"]:
-                response = "no response"
+            # if response not in ["a","b","c","d","e"]:
+            #     response = "no response"
             responses.append(response)
         except torch.cuda.OutOfMemoryError:
             print(bcolors.WARNING + f"CUDA out of memory error encountered, skipping query: '{query}'..." + bcolors.ENDC)
@@ -66,8 +66,13 @@ def getRadioResponse(query):
     most_prominent_response = counts.most_common(1)[0][0]
     # conformity check
     if most_prominent_response not in ['a', 'b', 'c', 'd', 'e']:
-        print(bcolors.WARNING + f"Invalid response: {most_prominent_response}" + bcolors.ENDC)
-        most_prominent_response = "no response"
+        # mistral sometimes responds with not only the letter but also the option text
+        # fix it manually
+        if most_prominent_response[0] in ['a', 'b', 'c', 'd', 'e']:
+            most_prominent_response = most_prominent_response[0]
+        else:
+            print(bcolors.WARNING + f"Invalid response: {most_prominent_response}" + bcolors.ENDC)
+            most_prominent_response = "no response"
     return most_prominent_response
 
 
@@ -76,7 +81,7 @@ def getCheckboxResponse(query):
         responses = []
         try:
             # response = llm.generate(query + " \"Instruction: Respond with only the letters (a-e) separated with comma, corresponding to the correct options. Do not include any explanation or additional text.\"")
-            response = llm.generate(query, "checkbox", FEW_SHOT_FLAG)
+            response = llm.generate(query, "checkbox", FEW_SHOT_NUM)
             response = response.replace("\n", " ").lower()
             response = response.replace(".", "")
             response = response.replace(" ", "")
@@ -100,16 +105,18 @@ def getCheckboxResponse(query):
     return most_prominent_response
 
 def main():
-    global llm
+    global llm, FEW_SHOT_NUM
     parser = argparse.ArgumentParser(description="Run an LLM with optional RAG functionality.")
     parser.add_argument("-query_dataset_path", type=str, help="Path of the query dataset to use")
     parser.add_argument("-query_result_path", type=str, help="Path of the output result")
     parser.add_argument("-qtype", type=str, help="Query type in file (if all queries have the same type only, for 3 column files)")
     parser.add_argument("-model", type=str, default="meta-llama/Meta-Llama-3.1-8B-Instruct", help="LLM model to load")
     parser.add_argument("-quantize", type=int, default=4, help="Bits to quantize the model to. Options: [4,8]")
+    parser.add_argument("-few_shot", type=int, default=0, help="Few-shot examples to add during inference.")
     args = parser.parse_args()
 
     llm_modelid = args.model
+    FEW_SHOT_NUM = args.few_shot
     rdf_input_file = "/mnt/newdrive/data_files/SpaTex/CSZt.nt"
     llm = SparagiRDF(llm_modelid, rdf_input_file, args.quantize)
     print(bcolors.GREEN + "Using SPARAGI-RDF LLM" + bcolors.ENDC)

@@ -4,7 +4,7 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 RESPONSES_DIR="$SCRIPT_DIR/benchmark"
-SRC_DIR="$SCRIPT_DIR/../benchmark/spatial-inference-benchmark/src"
+SRC_DIR="$SCRIPT_DIR/../../benchmark/spatial-inference-benchmark/src"
 
 echo $RESPONSES_DIR
 

@@ -128,6 +128,9 @@ class RDFGraphIndexer:
         
         return " ".join(texts) if texts else None  # Return None if no text at all
 
+    def getAllRelations(self):
+        return INVERSE_RELATION.keys()
+
     def getInverseRelation(self, relation):
         if relation in  INVERSE_RELATION:
             return INVERSE_RELATION[relation]
