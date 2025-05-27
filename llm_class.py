@@ -16,6 +16,10 @@ class bcolors:
     WARNING = '\033[93m'
     ENDC = '\033[0m'
 
+class REASONING:
+    EXTERNAL = 0,
+    INTERNAL = 1
+
 # Base LLM class
 class LLM:
     llm_modelid = ""
@@ -30,7 +34,7 @@ class LLM:
             return self.system_role
     
     def generateSystemRole(self):
-        self.system_role = [{"role": "system", "content": "You are a bot that answers spatial reasoning questions."}]
+        self.system_role = [{"role": "system", "content": "You are a spatial reasoning assistant."}]
 
     def loadModel(self):        
         # Load LLM
@@ -83,8 +87,32 @@ class LLM:
 
 # Plain LLM
 class PlainLLM(LLM):
-    def generate(self, prompt, k=0):
-        messages = [{"role": "user", "content": "Question: " + prompt+"\n"}]
+    def generate(self, prompt, query_type):
+        # messages = [{"role": "user", "content": "Question: " + prompt+"\n"}]
+        # return super().generate(messages)
+        messages = []
+        # set instruction in system based on query type
+        if query_type == "yes/no":
+            # put instruction in the system role
+            self.system_role = [{"role": "system", "content": "You are a spatial reasoning assistant. Answer with only 'yes' or 'no'. Do not include any explanation or additional text."}]
+            message = f"Question: {prompt}"
+            messages.append({"role": "user", "content": f"{message}"})
+        elif query_type == "radio":
+            self.generateSystemRole()   # reset
+            # for radio, do not override the system role. for some reason the instruction works best if paired with the question/options.
+            messages.append({"role": "user", "content": f"{prompt}\nInstruction: Respond with only the single letter (a-e) corresponding to the correct option. Do not include any explanation or additional text."})
+        
+            # for mistral, a single user message must be given.
+            # message = f"{prompt}\nInstruction: Respond with only the single letter (a-e) corresponding to the correct option. Do not include any explanation or additional text."
+            # messages.append({"role": "user", "content": f"{message}"})
+        elif query_type == "checkbox":
+            # put instruction in the system role
+            # self.system_role = [{"role": "system", "content": "You are a spatial reasoning assistant. Always use the provided context to answer questions accurately. If 'None of the above' is selected, it must be the only selected option. Respond only with the letter(s) of the selected options, separated by commas (e.g., 'a,b,c'). Do not include any explanation or additional text."}]
+            message = f"{prompt}"
+            self.system_role = [{"role": "system", "content": "You are a spatial reasoning assistant. If 'e' (none of the above) is selected, it must be the only selected option. Respond only with the letter(s) of the selected options, separated by commas (e.g., 'a,b,c'). Do not include any explanation or additional text."}]
+            messages.append({"role": "user", "content": f"{message}"})
+              
+        # generate and return
         return super().generate(messages)
     
     def __init__(self, llm_modelid, quantize_bits=None):
@@ -542,22 +570,44 @@ class SparagiRDF(LLM):
         if few_shot_num <= 0:
             return []
         
-        if qtype == "yes/no":
-            return self._generate_yesno_examples(context, few_shot_num)
-        elif qtype == "radio":
-            return self._generate_radio_examples(prompt, context, few_shot_num)
-        elif qtype == "checkbox":
-            return self._generate_checkbox_examples(prompt, context, few_shot_num)
-            
-        
-    
-    def generate(self, prompt, query_type, few_shot_num):
-        PROMPT = prompt
-        message_text = ""
-        # get entities
-        entities = self.entity_extractor.extract_entities(prompt)
-        # find start/end points in graph
-        pairs = self.graph_indexer.find_start_end_pairs(entities)
+        # generative few-shot/context learning 
+        # if qtype == "yes/no":
+        #     return self._generate_yesno_examples(context, few_shot_num)
+        # elif qtype == "radio":
+        #     return self._generate_radio_examples(prompt, context, few_shot_num)
+        # elif qtype == "checkbox":
+        #     return self._generate_checkbox_examples(prompt, context, few_shot_num)
+
+        # static few-shot learning
+        examples = [
+        {
+            "role": "user", 
+            "content": "Entity A is east of Entity B. Where is entity B relative to A?"
+        },
+        {
+            "role": "assistant", 
+            "content": "Entity B is west of Entity A."
+        },
+        {
+            "role": "user", 
+            "content": "Entity X is inside of Entity Y. Where is entity Y relative to X?"
+        },
+        {
+            "role": "assistant", 
+            "content": "Entity Y contains Entity X."
+        },
+        {
+            "role": "user", 
+            "content": "Entity <name1> is northwest of Entity <name2>. Where is entity <name2> relative to <name1>?"
+        },
+        {
+            "role": "assistant", 
+            "content": "Entity <name2> southeast Entity <name1>."
+        },
+        ]
+        return examples[:2*few_shot_num]
+
+    def _get_external_reasoning_context(self, pairs):
         # get paths
         context = ""
         for start, end in pairs:
@@ -587,6 +637,78 @@ class SparagiRDF(LLM):
                     combined_relation = self.graph_indexer.getInverseRelation(self.graph_indexer.getCombinedRelation(path))
                     context += self.generateContext(clean_start, clean_end, combined_relation)
         
+        return context
+    
+    def _chain_of_though_on_path(self, start, end, path):
+        formatted_path = ""
+        counter = 1
+        for s, p, o in path:
+            clean_s = self.graph_indexer.get_local_name(s)
+            clean_p = self.graph_indexer.get_local_name(p)
+            clean_o = self.graph_indexer.get_local_name(o)
+            
+            formatted_path += f"{counter}. {clean_s} is {clean_p} of {clean_o}.\n"
+            
+            counter += 1
+        
+        # get the reasoning    
+        self.system_role = [{"role": "system", "content": "You are a spatial reasoning assistant. Always use the provided context to answer questions accurately."}]
+        
+        message = "Given the following spatial relations:\n" + formatted_path + f"What is the spatial relationship between {start} and {end}? Let's think step by step."
+        messages = [{"role": "user", "content": f"{message}"}]
+        reasoning_response = super().generate(messages)
+        # summarize as a verdict (context)
+        messages.append({"role": "assistant", "content": f"{reasoning_response}"})
+        messages.append({"role": "user", "content": f"Summarize the spatial relationship between {start} and {end} in exactly one short sentence, without further explanation."})
+        verdict = super().generate(messages)
+        return verdict
+    
+    def _get_internal_reasoning_context(self, pairs):
+        # get paths
+        context = ""
+        for start, end in pairs:
+            path = self.graph_indexer.find_path_bfs_uri(start, end)
+            # if not path:
+            #     print(f"None path for {start}->{end}")
+            # print(f"start: {start}")
+            # print(f"end: {end}")
+            # self.graph_indexer.printPath(path)
+            if path:    
+                clean_start = self.graph_indexer.get_local_name(start)
+                clean_end = self.graph_indexer.get_local_name(end)       
+                context = self._chain_of_though_on_path(clean_start, clean_end, path)
+            else:
+                # try looking in reverse
+                path = self.graph_indexer.find_path_bfs_uri(end, start)
+                # if not path:
+                #     print(f"None path for {start}->{end}")
+                # print("Inverse...")
+                # print(f"start: {end}")
+                # print(f"end: {start}")
+                # self.graph_indexer.printPath(path)
+                if path:    
+                    clean_start = self.graph_indexer.get_local_name(end)
+                    clean_end = self.graph_indexer.get_local_name(start)
+                    context = self._chain_of_though_on_path(clean_start, clean_end, path)
+        
+        return context
+    
+    def generate(self, prompt, query_type, few_shot_num, reasoning=REASONING.EXTERNAL):
+        PROMPT = prompt
+        message_text = ""
+        # get entities
+        entities = self.entity_extractor.extract_entities(prompt)
+        # find start/end points in graph
+        pairs = self.graph_indexer.find_start_end_pairs(entities)
+        
+        context = ""
+        if reasoning == REASONING.EXTERNAL:
+            # external reasoning
+            context = self._get_external_reasoning_context(pairs)
+        else:
+            # inhouse reasoning
+            context = self._get_internal_reasoning_context(pairs)
+        
         messages = []
         
         if few_shot_num > 0:
@@ -603,12 +725,12 @@ class SparagiRDF(LLM):
         elif query_type == "radio":
             self.generateSystemRole()   # reset
             # for radio, do not override the system role. for some reason the instruction works best if paired with the question/options.
-            # messages.append({"role": "user", "content": f"Context: {context}"})
-            # messages.append({"role": "user", "content": f"{prompt}\nInstruction: Respond with only the single letter (a-e) corresponding to the correct option. Do not include any explanation or additional text."})
+            messages.append({"role": "user", "content": f"Context: {context}"})
+            messages.append({"role": "user", "content": f"{prompt}\nInstruction: Respond with only the single letter (a-e) corresponding to the correct option. Do not include any explanation or additional text."})
         
             # for mistral, a single user message must be given.
-            message = f"Context: {context} {prompt}\nInstruction: Respond with only the single letter (a-e) corresponding to the correct option. Do not include any explanation or additional text."
-            messages.append({"role": "user", "content": f"{message}"})
+            # message = f"Context: {context} {prompt}\nInstruction: Respond with only the single letter (a-e) corresponding to the correct option. Do not include any explanation or additional text."
+            # messages.append({"role": "user", "content": f"{message}"})
         elif query_type == "checkbox":
             # put instruction in the system role
             # self.system_role = [{"role": "system", "content": "You are a spatial reasoning assistant. Always use the provided context to answer questions accurately. If 'None of the above' is selected, it must be the only selected option. Respond only with the letter(s) of the selected options, separated by commas (e.g., 'a,b,c'). Do not include any explanation or additional text."}]

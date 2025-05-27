@@ -3,20 +3,21 @@
 # Define models and which query types to run for each (1=enable, 0=disable)
 declare -A MODEL_CONFIGS=(
     # Format: "enabled|yesno|radio|checkbox"
-    ["meta-llama/Meta-Llama-3.1-8B-Instruct"]="0|0|0|0"
-    ["mistralai/Mistral-7B-Instruct-v0.1"]="1|0|1|0"
-    ["Qwen/Qwen2.5-7B-Instruct"]="0|0|0|0"
+    ["meta-llama/Meta-Llama-3.1-8B-Instruct"]="1|1|1|1"
+    ["mistralai/Mistral-7B-Instruct-v0.1"]="1|1|1|1"
+    ["Qwen/Qwen2.5-7B-Instruct"]="1|1|1|1"
 )
 
 # Base paths
 QUERY_YESNO_PATH="queries_yesno.csv"
 QUERY_RADIO_PATH="queries_radio.csv"
 QUERY_CHECKBOX_PATH="queries_checkbox.csv"
-# OUTPUT_BASE="benchmark"
-OUTPUT_BASE="test_responses"
+OUTPUT_BASE="benchmark_external_reasoning"
+# OUTPUT_BASE="benchmark_internal_reasoning"
+# OUTPUT_BASE="test_responses"
 
 # Few-shot parameter (set to 0 for zero-shot, or higher for few-shot)
-FEW_SHOT_NUM=3  # Change this value as needed
+FEW_SHOT_NUM=0  # Change this value as needed
 
 for model in "${!MODEL_CONFIGS[@]}"; do
     # Split the configuration string

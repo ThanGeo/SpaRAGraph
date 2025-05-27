@@ -3,7 +3,20 @@
 # Get the absolute path to the directory containing this script
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-RESPONSES_DIR="$SCRIPT_DIR/benchmark"
+# RESPONSES_DIR="$SCRIPT_DIR/benchmark_external_reasoning/1st-run"
+# RESPONSES_DIR="$SCRIPT_DIR/benchmark_external_reasoning/2nd-run"
+# RESPONSES_DIR="$SCRIPT_DIR/benchmark_external_reasoning/3rd-run"
+RESPONSES_DIR="$SCRIPT_DIR/benchmark_external_reasoning"
+
+
+# RESPONSES_DIR="$SCRIPT_DIR/benchmark_plain_llm/1st-run"
+# RESPONSES_DIR="$SCRIPT_DIR/benchmark_plain_llm/2nd-run"
+# RESPONSES_DIR="$SCRIPT_DIR/benchmark_plain_llm/3rd-run"
+
+
+# RESPONSES_DIR="$SCRIPT_DIR/benchmark_internal_reasoning"
+
+
 SRC_DIR="$SCRIPT_DIR/../../benchmark/spatial-inference-benchmark/src"
 
 echo $RESPONSES_DIR

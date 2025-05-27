@@ -1,6 +1,6 @@
 from collections import Counter
 from tqdm import tqdm
-from llm_class import PlainLLM, SparagiRDF
+from llm_class import PlainLLM, SparagiRDF, REASONING
 import torch
 import argparse
 import re
@@ -10,7 +10,9 @@ torch.cuda.empty_cache()
 
 
 FEW_SHOT_NUM = 0
-REPEAT_FACTOR = 3
+REPEAT_FACTOR = 1
+# REASONING_TYPE = REASONING.INTERNAL
+REASONING_TYPE = REASONING.EXTERNAL
 # regex to remove non-chars in necessary
 regex = re.compile('[^a-zA-Z]')
 llm = None
@@ -28,7 +30,7 @@ def getYesNoResponse(query):
         responses = []
         try:
             # response = llm.generate(query + " Instruction: Respond with only 'yes' or 'no'. Do not include any other text or explanation.")  # for yes/no queries, append an extra instruction
-            response = llm.generate(query, "yes/no", FEW_SHOT_NUM)
+            response = llm.generate(query, "yes/no", FEW_SHOT_NUM, REASONING_TYPE)
             response = response.replace("\n", " ").lower()
             response = regex.sub('', response)
             responses.append(response)
@@ -50,7 +52,7 @@ def getRadioResponse(query):
         responses = []
         try:
             # response = llm.generate(query + " \"Instruction: Respond with only the single letter (a-e) corresponding to the correct option. Do not include any explanation or additional text.\"")
-            response = llm.generate(query, "radio", FEW_SHOT_NUM)
+            response = llm.generate(query, "radio", FEW_SHOT_NUM, REASONING_TYPE)
             response = response.replace("\n", " ").lower()
             response = response.replace(".", "")
             response = regex.sub('', response)
@@ -81,7 +83,7 @@ def getCheckboxResponse(query):
         responses = []
         try:
             # response = llm.generate(query + " \"Instruction: Respond with only the letters (a-e) separated with comma, corresponding to the correct options. Do not include any explanation or additional text.\"")
-            response = llm.generate(query, "checkbox", FEW_SHOT_NUM)
+            response = llm.generate(query, "checkbox", FEW_SHOT_NUM, REASONING_TYPE)
             response = response.replace("\n", " ").lower()
             response = response.replace(".", "")
             response = response.replace(" ", "")

@@ -1,0 +1,198 @@
+/home/thanasis/Desktop/PhD/NLP-DB/spatial llms/sparagi_rdf/SpaRAGraph/benchmark_external_reasoning/1st-run
+Evaluating model: meta-llama-3.1-8b-instruct_fewshot0 (BINARY)
+Precision: 0.94
+Recall: 0.98
+F1-score: 0.96
+
+Evaluating model: meta-llama-3.1-8b-instruct_fewshot1 (BINARY)
+Precision: 0.74
+Recall: 1.00
+F1-score: 0.85
+
+Evaluating model: meta-llama-3.1-8b-instruct_fewshot2 (BINARY)
+Precision: 0.73
+Recall: 1.00
+F1-score: 0.84
+
+Evaluating model: meta-llama-3.1-8b-instruct_fewshot3 (BINARY)
+Precision: 0.66
+Recall: 1.00
+F1-score: 0.80
+
+Evaluating model: mistral-7b-instruct-v0.1_fewshot0 (BINARY)
+Precision: 0.93
+Recall: 0.99
+F1-score: 0.96
+
+Evaluating model: mistral-7b-instruct-v0.1_fewshot1 (BINARY)
+Precision: 0.92
+Recall: 0.99
+F1-score: 0.95
+
+Evaluating model: mistral-7b-instruct-v0.1_fewshot2 (BINARY)
+Precision: 0.95
+Recall: 0.99
+F1-score: 0.97
+
+Evaluating model: mistral-7b-instruct-v0.1_fewshot3 (BINARY)
+Precision: 0.93
+Recall: 0.99
+F1-score: 0.96
+
+Evaluating model: qwen2.5-7b-instruct_fewshot0 (BINARY)
+Precision: 1.00
+Recall: 0.97
+F1-score: 0.98
+
+Evaluating model: qwen2.5-7b-instruct_fewshot1 (BINARY)
+Precision: 0.84
+Recall: 0.81
+F1-score: 0.83
+
+Evaluating model: qwen2.5-7b-instruct_fewshot2 (BINARY)
+Precision: 0.80
+Recall: 0.87
+F1-score: 0.84
+
+Evaluating model: qwen2.5-7b-instruct_fewshot3 (BINARY)
+Precision: 0.87
+Recall: 0.87
+F1-score: 0.87
+
+Evaluating model: meta-llama-3.1-8b-instruct_fewshot0 (MULTICLASS)
+
+macro-Precision: 0.74
+macro-Recall: 0.71
+macro-F1-score: 0.71
+
+Evaluating model: meta-llama-3.1-8b-instruct_fewshot1 (MULTICLASS)
+
+macro-Precision: 0.68
+macro-Recall: 0.61
+macro-F1-score: 0.61
+
+Evaluating model: meta-llama-3.1-8b-instruct_fewshot2 (MULTICLASS)
+
+macro-Precision: 0.65
+macro-Recall: 0.62
+macro-F1-score: 0.62
+
+Evaluating model: meta-llama-3.1-8b-instruct_fewshot3 (MULTICLASS)
+
+macro-Precision: 0.67
+macro-Recall: 0.64
+macro-F1-score: 0.64
+
+Evaluating model: mistral-7b-instruct-v0.1_fewshot0 (MULTICLASS)
+Warning: Invalid responses detected
+Invalid predicted values: ['no response']
+
+macro-Precision: 0.59
+macro-Recall: 0.35
+macro-F1-score: 0.32
+
+Evaluating model: mistral-7b-instruct-v0.1_fewshot1 (MULTICLASS)
+
+macro-Precision: 0.47
+macro-Recall: 0.32
+macro-F1-score: 0.27
+
+Evaluating model: mistral-7b-instruct-v0.1_fewshot2 (MULTICLASS)
+
+macro-Precision: 0.47
+macro-Recall: 0.33
+macro-F1-score: 0.27
+
+Evaluating model: mistral-7b-instruct-v0.1_fewshot3 (MULTICLASS)
+Warning: Invalid responses detected
+Invalid predicted values: ['no response']
+
+macro-Precision: 0.47
+macro-Recall: 0.32
+macro-F1-score: 0.27
+
+Evaluating model: qwen2.5-7b-instruct_fewshot0 (MULTICLASS)
+
+macro-Precision: 0.83
+macro-Recall: 0.82
+macro-F1-score: 0.76
+
+Evaluating model: qwen2.5-7b-instruct_fewshot1 (MULTICLASS)
+
+macro-Precision: 0.83
+macro-Recall: 0.81
+macro-F1-score: 0.75
+
+Evaluating model: qwen2.5-7b-instruct_fewshot2 (MULTICLASS)
+
+macro-Precision: 0.85
+macro-Recall: 0.83
+macro-F1-score: 0.77
+
+Evaluating model: qwen2.5-7b-instruct_fewshot3 (MULTICLASS)
+
+macro-Precision: 0.84
+macro-Recall: 0.82
+macro-F1-score: 0.76
+
+Evaluating model: meta-llama-3.1-8b-instruct_fewshot0 (MULTILABEL)
+sample-average Precision: 0.44
+sample-average Recall: 0.68
+sample-average F1-score: 0.51
+
+Evaluating model: meta-llama-3.1-8b-instruct_fewshot1 (MULTILABEL)
+sample-average Precision: 0.36
+sample-average Recall: 0.60
+sample-average F1-score: 0.43
+
+Evaluating model: meta-llama-3.1-8b-instruct_fewshot2 (MULTILABEL)
+sample-average Precision: 0.35
+sample-average Recall: 0.59
+sample-average F1-score: 0.42
+
+Evaluating model: meta-llama-3.1-8b-instruct_fewshot3 (MULTILABEL)
+sample-average Precision: 0.36
+sample-average Recall: 0.59
+sample-average F1-score: 0.42
+
+Evaluating model: mistral-7b-instruct-v0.1_fewshot0 (MULTILABEL)
+sample-average Precision: 0.30
+sample-average Recall: 0.58
+sample-average F1-score: 0.37
+
+Evaluating model: mistral-7b-instruct-v0.1_fewshot1 (MULTILABEL)
+sample-average Precision: 0.27
+sample-average Recall: 0.51
+sample-average F1-score: 0.33
+
+Evaluating model: mistral-7b-instruct-v0.1_fewshot2 (MULTILABEL)
+sample-average Precision: 0.28
+sample-average Recall: 0.52
+sample-average F1-score: 0.34
+
+Evaluating model: mistral-7b-instruct-v0.1_fewshot3 (MULTILABEL)
+sample-average Precision: 0.26
+sample-average Recall: 0.49
+sample-average F1-score: 0.32
+
+Evaluating model: qwen2.5-7b-instruct_fewshot0 (MULTILABEL)
+sample-average Precision: 0.72
+sample-average Recall: 0.85
+sample-average F1-score: 0.76
+
+Evaluating model: qwen2.5-7b-instruct_fewshot1 (MULTILABEL)
+sample-average Precision: 0.67
+sample-average Recall: 0.84
+sample-average F1-score: 0.73
+
+Evaluating model: qwen2.5-7b-instruct_fewshot2 (MULTILABEL)
+sample-average Precision: 0.67
+sample-average Recall: 0.84
+sample-average F1-score: 0.72
+
+Evaluating model: qwen2.5-7b-instruct_fewshot3 (MULTILABEL)
+sample-average Precision: 0.64
+sample-average Recall: 0.84
+sample-average F1-score: 0.71
+
+All evaluations completed!

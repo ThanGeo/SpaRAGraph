@@ -1,0 +1,50 @@
+/home/thanasis/Desktop/PhD/NLP-DB/spatial llms/sparagi_rdf/SpaRAGraph/benchmark_plain_llm/3rd-run
+Evaluating model: meta-llama-3.1-8b-instruct (BINARY)
+Precision: 0.50
+Recall: 0.81
+F1-score: 0.62
+
+Evaluating model: mistral-7b-instruct-v0.1 (BINARY)
+Precision: 0.52
+Recall: 0.48
+F1-score: 0.50
+
+Evaluating model: qwen2.5-7b-instruct (BINARY)
+Precision: 0.82
+Recall: 0.22
+F1-score: 0.35
+
+Evaluating model: meta-llama-3.1-8b-instruct (MULTICLASS)
+
+macro-Precision: 0.22
+macro-Recall: 0.21
+macro-F1-score: 0.16
+
+Evaluating model: mistral-7b-instruct-v0.1 (MULTICLASS)
+
+macro-Precision: 0.24
+macro-Recall: 0.21
+macro-F1-score: 0.15
+
+Evaluating model: qwen2.5-7b-instruct (MULTICLASS)
+
+macro-Precision: 0.26
+macro-Recall: 0.26
+macro-F1-score: 0.26
+
+Evaluating model: meta-llama-3.1-8b-instruct (MULTILABEL)
+sample-average Precision: 0.24
+sample-average Recall: 0.51
+sample-average F1-score: 0.30
+
+Evaluating model: mistral-7b-instruct-v0.1 (MULTILABEL)
+sample-average Precision: 0.24
+sample-average Recall: 0.45
+sample-average F1-score: 0.29
+
+Evaluating model: qwen2.5-7b-instruct (MULTILABEL)
+sample-average Precision: 0.34
+sample-average Recall: 0.50
+sample-average F1-score: 0.39
+
+All evaluations completed!
