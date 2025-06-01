@@ -19,7 +19,7 @@ composition_table_8dir = {
     ('northeast', 'north'): 'northeast',
     ('northeast', 'northeast'): 'northeast',
     ('northeast', 'east'): 'east',
-    ('northeast', 'southeast'): 'southeast',
+    ('northeast', 'southeast'): 'east',
     ('northeast', 'south'): 'east',
     ('northeast', 'southwest'): 'north',
     ('northeast', 'west'): 'north',
@@ -35,7 +35,7 @@ composition_table_8dir = {
     ('east', 'northwest'): 'north',
 
     ('southeast', 'north'): 'east',
-    ('southeast', 'northeast'): 'southeast',
+    ('southeast', 'northeast'): 'east',
     ('southeast', 'east'): 'southeast',
     ('southeast', 'southeast'): 'southeast',
     ('southeast', 'south'): 'south',
@@ -257,6 +257,7 @@ class RDFGraphIndexer:
                             })
         
         # Only pair FIRST entity with all others (in original order)
+        
         if len(grounded_entities) > 1:
             first_uri = grounded_entities[0]["uri"]
             for other_entity in grounded_entities[1:]:
@@ -305,13 +306,15 @@ class RDFGraphIndexer:
             if "adjacent to and " in clean_name:
                 clean_name = clean_name.replace("adjacent to and ", "")
             current_relation = clean_name
-                    
+            # print(f"{path[0][0]}, {path[0][1]}, {path[0][2]}")
+            
             for s, p, o in path[1:]:
                 # print(f"Current: {current_relation}")
                 clean_name = self.get_local_name(p)
                 if "adjacent to and " in clean_name:
                     clean_name = clean_name.replace("adjacent to and ", "")
                 
+                # print(f"{s}, {p}, {o}")
                 # print(f"({current_relation}, {clean_name}) gives:")
                 if current_relation == "inside" or current_relation == "contains" or current_relation == "intersects with":
                     # retain the same
@@ -328,26 +331,50 @@ class RDFGraphIndexer:
             
         return current_relation
     
+    
+    # def find_path_bfs_uri(self, start, end):
+    #     visited = set()
+    #     queue = deque()
+        
+    #     # Each item: (current_node, path_so_far)
+    #     queue.append((start, []))
+    #     visited.add(start)
+        
+    #     while queue:
+    #         current, path = queue.popleft()
+            
+    #         if current == end:
+    #             return path
+
+    #         # Expand outgoing edges
+    #         for s, p, o in self.graph.triples((current, None, None)):
+    #             if isinstance(o, URIRef) and o not in visited:
+    #                 visited.add(o)
+    #                 queue.append((o, path + [(current, p, o)]))
+        
+    #     return None
+    
     def find_path_bfs_uri(self, start, end):
-        visited = set()
         queue = deque()
-        
-        # Each item: (current_node, path_so_far)
+        visited = set()
+
+        # Each item in queue: (current_node, path_so_far)
         queue.append((start, []))
-        visited.add(start)
-        
+
         while queue:
             current, path = queue.popleft()
-            
+
+            if current in visited:
+                continue
+            visited.add(current)
+
             if current == end:
                 return path
 
-            # Expand outgoing edges
             for _, p, o in self.graph.triples((current, None, None)):
-                if isinstance(o, URIRef) and o not in visited:
-                    visited.add(o)
+                if isinstance(o, URIRef):
                     queue.append((o, path + [(current, p, o)]))
-        
+
         return None
 
 

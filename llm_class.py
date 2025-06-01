@@ -77,7 +77,7 @@ class LLM:
     def generate(self, messages):
         # add the system role
         messages = self.getSystemRole() + messages
-        print(messages)
+        # print(messages)
         return self.generateAndDecode(messages)
 
     # def __init__(self, llm_modelid):
@@ -112,6 +112,15 @@ class PlainLLM(LLM):
             self.system_role = [{"role": "system", "content": "You are a spatial reasoning assistant. If 'e' (none of the above) is selected, it must be the only selected option. Respond only with the letter(s) of the selected options, separated by commas (e.g., 'a,b,c'). Do not include any explanation or additional text."}]
             messages.append({"role": "user", "content": f"{message}"})
               
+        # generate and return
+        return super().generate(messages)
+    
+    def chat(self, prompt): 
+        messages = []        
+        self.system_role = [{"role": "system", "content": "You are a spatial reasoning assistant."}]
+        message = f"{prompt}"
+        messages.append({"role": "user", "content": f"{message}"})
+        
         # generate and return
         return super().generate(messages)
     
@@ -700,7 +709,7 @@ class SparagiRDF(LLM):
         entities = self.entity_extractor.extract_entities(prompt)
         # find start/end points in graph
         pairs = self.graph_indexer.find_start_end_pairs(entities)
-        
+                
         context = ""
         if reasoning == REASONING.EXTERNAL:
             # external reasoning
@@ -738,6 +747,29 @@ class SparagiRDF(LLM):
             message = f"Context: {context} \n{prompt}"
             messages.append({"role": "user", "content": f"{message}"})
               
+        # generate and return
+        return super().generate(messages)
+    
+    def chat(self, prompt, reasoning=REASONING.EXTERNAL):
+        # get entities
+        entities = self.entity_extractor.extract_entities(prompt)
+        # find start/end points in graph
+        pairs = self.graph_indexer.find_start_end_pairs(entities)
+                
+        context = ""
+        if reasoning == REASONING.EXTERNAL:
+            # external reasoning
+            context = self._get_external_reasoning_context(pairs)
+        else:
+            # inhouse reasoning
+            context = self._get_internal_reasoning_context(pairs)
+        
+        messages = []        
+        self.system_role = [{"role": "system", "content": "You are a spatial reasoning assistant. Always use the provided context to answer questions accurately."}]
+        message = f"Context: {context} \nPrompt: {prompt}"
+        messages.append({"role": "user", "content": f"{message}"})
+        
+        print(bcolors.MAGENTA + f"Context: \n{context}" + bcolors.ENDC)
         # generate and return
         return super().generate(messages)
 
