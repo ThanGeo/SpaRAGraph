@@ -75,9 +75,9 @@ class LLM:
         return decoded_response
 
     def generate(self, messages):
-        # add the system role
+        # add the system role (doesnt work on all models)
         messages = self.getSystemRole() + messages
-        # print(messages)
+        print(messages)
         return self.generateAndDecode(messages)
 
     # def __init__(self, llm_modelid):
@@ -115,7 +115,7 @@ class PlainLLM(LLM):
         # generate and return
         return super().generate(messages)
     
-    def chat(self, prompt): 
+    def chat(self, prompt, few_shot_num): 
         messages = []        
         self.system_role = [{"role": "system", "content": "You are a spatial reasoning assistant."}]
         message = f"{prompt}"
@@ -614,18 +614,19 @@ class SparagiRDF(LLM):
             "content": "Entity <name2> southeast Entity <name1>."
         },
         ]
+        print("Few-shot example: ", examples[:2*few_shot_num])
         return examples[:2*few_shot_num]
-
+    
     def _get_external_reasoning_context(self, pairs):
         # get paths
         context = ""
         for start, end in pairs:
             path = self.graph_indexer.find_path_bfs_uri(start, end)
-            # if not path:
-            #     print(f"None path for {start}->{end}")
+            if not path:
+                print(f"None path for {start}->{end}")
             # print(f"start: {start}")
             # print(f"end: {end}")
-            # self.graph_indexer.printPath(path)
+            self.graph_indexer.printPath(path)
             if path:    
                 clean_start = self.graph_indexer.get_local_name(start)
                 clean_end = self.graph_indexer.get_local_name(end)       
@@ -634,17 +635,17 @@ class SparagiRDF(LLM):
             else:
                 # try looking in reverse
                 path = self.graph_indexer.find_path_bfs_uri(end, start)
-                # if not path:
-                #     print(f"None path for {start}->{end}")
+                if not path:
+                    print(f"None path for {start}->{end}")
                 # print("Inverse...")
                 # print(f"start: {end}")
                 # print(f"end: {start}")
-                # self.graph_indexer.printPath(path)
+                self.graph_indexer.printPath(path)
                 if path:    
                     clean_start = self.graph_indexer.get_local_name(end)
                     clean_end = self.graph_indexer.get_local_name(start)       
                     combined_relation = self.graph_indexer.getInverseRelation(self.graph_indexer.getCombinedRelation(path))
-                    context += self.generateContext(clean_start, clean_end, combined_relation)
+                    context += self.generateContext(clean_end, clean_start, combined_relation)
         
         return context
     
@@ -737,7 +738,7 @@ class SparagiRDF(LLM):
             messages.append({"role": "user", "content": f"Context: {context}"})
             messages.append({"role": "user", "content": f"{prompt}\nInstruction: Respond with only the single letter (a-e) corresponding to the correct option. Do not include any explanation or additional text."})
         
-            # for mistral, a single user message must be given.
+            # for mistral and geocode-gpt, a single user message must be given.
             # message = f"Context: {context} {prompt}\nInstruction: Respond with only the single letter (a-e) corresponding to the correct option. Do not include any explanation or additional text."
             # messages.append({"role": "user", "content": f"{message}"})
         elif query_type == "checkbox":
@@ -748,30 +749,39 @@ class SparagiRDF(LLM):
             messages.append({"role": "user", "content": f"{message}"})
               
         # generate and return
+        # print(messages)
         return super().generate(messages)
+        # return "skipping generation"
     
-    def chat(self, prompt, reasoning=REASONING.EXTERNAL):
-        # get entities
-        entities = self.entity_extractor.extract_entities(prompt)
-        # find start/end points in graph
-        pairs = self.graph_indexer.find_start_end_pairs(entities)
-                
-        context = ""
-        if reasoning == REASONING.EXTERNAL:
-            # external reasoning
-            context = self._get_external_reasoning_context(pairs)
+    def chat(self, prompt, reasoning=REASONING.EXTERNAL, few_shot_num=0):
+        
+        if few_shot_num == 0:
+            # normal chat
+            # get entities
+            entities = self.entity_extractor.extract_entities(prompt)
+            # print(f"entities: {entities}")
+            # find start/end points in graph
+            pairs = self.graph_indexer.find_start_end_pairs(entities)
+                    
+            context = ""
+            if reasoning == REASONING.EXTERNAL:
+                # external reasoning
+                context = self._get_external_reasoning_context(pairs)
+            else:
+                # inhouse reasoning
+                context = self._get_internal_reasoning_context(pairs)
+            
+            messages = []        
+            self.system_role = [{"role": "system", "content": "You are a spatial reasoning assistant. Always use the provided context to answer questions accurately."}]
+            message = f"Context: {context} \nPrompt: {prompt}"
+            messages.append({"role": "user", "content": f"{message}"})
+            
+            print(bcolors.MAGENTA + f"Context: \n{context}" + bcolors.ENDC)
+            return super().generate(messages)
         else:
-            # inhouse reasoning
-            context = self._get_internal_reasoning_context(pairs)
-        
-        messages = []        
-        self.system_role = [{"role": "system", "content": "You are a spatial reasoning assistant. Always use the provided context to answer questions accurately."}]
-        message = f"Context: {context} \nPrompt: {prompt}"
-        messages.append({"role": "user", "content": f"{message}"})
-        
-        print(bcolors.MAGENTA + f"Context: \n{context}" + bcolors.ENDC)
-        # generate and return
-        return super().generate(messages)
+            # few-shot chat (hardcode the type, only for development)
+            return self.generate(prompt, "checkbox", few_shot_num, reasoning)
+         
 
     def getPrompt(self, prompt, k):
         # retrieve documents

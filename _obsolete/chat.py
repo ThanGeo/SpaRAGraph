@@ -48,7 +48,7 @@ def main():
                 print(bcolors.RED + "Response:\n" + llm.chat(user_input) + bcolors.ENDC)
                 
     elif args.mode == "SPARAGRAPH":    
-        print(bcolors.GREEN + "Using SPARAGRAPH on " + args.model + bcolors.ENDC)
+        print(bcolors.GREEN + "Using SPARAGRAPH on " + args.model + f", {FEW_SHOT_NUM}-shot" + bcolors.ENDC)
         llm = SparagiRDF(llm_modelid, rdf_input_file, args.quantize)
         while True:
             user_input = input("Give a prompt (type 'exit' to quit): ")
@@ -57,7 +57,7 @@ def main():
                 break
             else:
                 print(bcolors.BLUE + "Prompt:\n" + user_input + bcolors.ENDC)
-                print(bcolors.RED + "Response:\n" + llm.chat(user_input, REASONING_TYPE) + bcolors.ENDC)
+                print(bcolors.RED + "Response:\n" + llm.chat(user_input, REASONING_TYPE, FEW_SHOT_NUM) + bcolors.ENDC)
     else:
         print(f"Error, Invalid mode: {args.mode}")
     

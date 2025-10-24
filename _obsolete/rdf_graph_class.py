@@ -5,13 +5,32 @@ from sentence_transformers import SentenceTransformer
 import faiss
 from collections import deque
 
+# ???
+uncertain_cases = {
+    ('north', 'south'): '???',
+    ('northeast', 'southwest'): '???',
+    ('east', 'west'): '???',
+    ('southeast', 'northwest'): '???', 
+    ('south', 'north'): '???',    
+    ('southwest', 'northeast'): '???',    
+    ('west', 'east'): '???',  
+    ('northwest', 'southeast'): '???', 
+    
+    ('inside', 'contains'): '???', 
+    ('inside', 'intersects_with'): '???', 
+    ('contains', 'inside'): '???', 
+    ('inside', 'intersects_with'): '???', 
+    ('intersects_with', 'inside'): '???', 
+    ('intersects_with', 'contains'): '???', 
+    ('intersects_with', 'intersects_with'): '???', 
+}
 
 composition_table_8dir = {
     ('north', 'north'): 'north',
     ('north', 'northeast'): 'northeast',
     ('north', 'east'): 'northeast',
     ('north', 'southeast'): 'east',
-    ('north', 'south'): 'north',
+    ('north', 'south'): 'north',        # ???
     ('north', 'southwest'): 'west',
     ('north', 'west'): 'northwest',
     ('north', 'northwest'): 'northwest',
@@ -21,7 +40,7 @@ composition_table_8dir = {
     ('northeast', 'east'): 'east',
     ('northeast', 'southeast'): 'east',
     ('northeast', 'south'): 'east',
-    ('northeast', 'southwest'): 'north',
+    ('northeast', 'southwest'): 'north', # ???
     ('northeast', 'west'): 'north',
     ('northeast', 'northwest'): 'north',
 
@@ -31,7 +50,7 @@ composition_table_8dir = {
     ('east', 'southeast'): 'southeast',
     ('east', 'south'): 'southeast',
     ('east', 'southwest'): 'southeast',
-    ('east', 'west'): 'north',
+    ('east', 'west'): 'north',  # ???
     ('east', 'northwest'): 'north',
 
     ('southeast', 'north'): 'east',
@@ -41,9 +60,9 @@ composition_table_8dir = {
     ('southeast', 'south'): 'south',
     ('southeast', 'southwest'): 'south',
     ('southeast', 'west'): 'east',
-    ('southeast', 'northwest'): 'east',
+    ('southeast', 'northwest'): 'east', # ???
 
-    ('south', 'north'): 'south',
+    ('south', 'north'): 'south',    # ???
     ('south', 'northeast'): 'east',
     ('south', 'east'): 'southeast',
     ('south', 'southeast'): 'south',
@@ -53,7 +72,7 @@ composition_table_8dir = {
     ('south', 'northwest'): 'west',
 
     ('southwest', 'north'): 'west',
-    ('southwest', 'northeast'): 'south',
+    ('southwest', 'northeast'): 'south',    # ???
     ('southwest', 'east'): 'south',
     ('southwest', 'southeast'): 'south',
     ('southwest', 'south'): 'southwest',
@@ -63,7 +82,7 @@ composition_table_8dir = {
 
     ('west', 'north'): 'northwest',
     ('west', 'northeast'): 'north',
-    ('west', 'east'): 'north',
+    ('west', 'east'): 'north',  # ???
     ('west', 'southeast'): 'east',
     ('west', 'south'): 'southwest',
     ('west', 'southwest'): 'west',
@@ -73,7 +92,7 @@ composition_table_8dir = {
     ('northwest', 'north'): 'northwest',
     ('northwest', 'northeast'): 'north',
     ('northwest', 'east'): 'north',
-    ('northwest', 'southeast'): 'east',
+    ('northwest', 'southeast'): 'east', # ???
     ('northwest', 'south'): 'west',
     ('northwest', 'southwest'): 'west',
     ('northwest', 'west'): 'northwest',
@@ -103,7 +122,7 @@ INVERSE_RELATION = {
     "contains":"inside",
 }
 
-class RDFGraphIndexer:
+class RDFGraphIndexer:    
     def __init__(self, graph_path, model_name="all-MiniLM-L6-v2"):
         self.graph = Graph()
         self.graph.parse(graph_path, format=guess_format(graph_path))
@@ -111,6 +130,7 @@ class RDFGraphIndexer:
         self.index = None
         self.uri_to_text = {}
         self.uris = []
+        self.uncertainCasesList = []
         
     def _get_text_for_uri(self, uri):
         """Extract text from URI itself if no labels exist (for .nt files)."""
@@ -196,37 +216,6 @@ class RDFGraphIndexer:
                 })
         
         return results
-        
-    # def find_start_end_pairs(self, ner_entities_dict):
-    #     start_end_pairs = []
-    #     grounded_entities = []
-        
-    #     # Ground each entity while preserving original order
-    #     for entity_type in ["zipcode", "county", "state"]:  # maintain this order for processing
-    #         if entity_type in ner_entities_dict:
-    #             for entity in ner_entities_dict[entity_type]:
-    #                 matches = self.query_entities(entity, top_k=1)
-    #                 if matches:
-    #                     grounded_entities.append({
-    #                         "uri": matches[0]["uri"],
-    #                         "type": entity_type,
-    #                         "original_text": entity
-    #                     })
-        
-    #     # # pair ALL with ALL
-    #     # for i in range(len(grounded_entities)):
-    #     #     for j in range(i + 1, len(grounded_entities)):
-    #     #         start_end_pairs.append((
-    #     #             grounded_entities[i]["uri"], 
-    #     #             grounded_entities[j]["uri"]
-    #     #         ))
-    #     # Only pair FIRST entity with all others
-    #     if len(grounded_entities) > 1:
-    #         first_uri = grounded_entities[0]["uri"]
-    #         for other_entity in grounded_entities[1:]:
-    #             start_end_pairs.append((first_uri, other_entity["uri"]))
-        
-    #     return start_end_pairs
 
     def find_start_end_pairs(self, ner_entities_dict):
         start_end_pairs = []
@@ -307,6 +296,7 @@ class RDFGraphIndexer:
                 clean_name = clean_name.replace("adjacent to and ", "")
             current_relation = clean_name
             # print(f"{path[0][0]}, {path[0][1]}, {path[0][2]}")
+            counter = 1
             
             for s, p, o in path[1:]:
                 # print(f"Current: {current_relation}")
@@ -316,6 +306,10 @@ class RDFGraphIndexer:
                 
                 # print(f"{s}, {p}, {o}")
                 # print(f"({current_relation}, {clean_name}) gives:")
+                if (current_relation, clean_name) in uncertain_cases:
+                    # self.uncertainCasesList.append((current_relation, clean_name))
+                    self.uncertainCasesList.append((path[counter-1], path[counter]))
+                    
                 if current_relation == "inside" or current_relation == "contains" or current_relation == "intersects with":
                     # retain the same
                     current_relation = clean_name
@@ -324,12 +318,15 @@ class RDFGraphIndexer:
                     current_relation = current_relation
                 else:
                     current_relation = composition_table_8dir[(current_relation, clean_name)]
+                        
                 # print(f"    {current_relation}")
+                counter += 1
         else:
             # single hop jump, keep as it is
             current_relation = self.get_local_name(path[0][1])
             
         return current_relation
+    
     
     
     # def find_path_bfs_uri(self, start, end):

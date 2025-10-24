@@ -1,6 +1,6 @@
 from collections import Counter
 from tqdm import tqdm
-from llm_class import PlainLLM, SparagiRDF, REASONING
+from llm_class import PlainLLM
 import torch
 import argparse
 import re
@@ -10,9 +10,7 @@ torch.cuda.empty_cache()
 
 
 FEW_SHOT_NUM = 0
-REPEAT_FACTOR = 1
-# REASONING_TYPE = REASONING.INTERNAL
-REASONING_TYPE = REASONING.EXTERNAL
+REPEAT_FACTOR = 3
 # regex to remove non-chars in necessary
 regex = re.compile('[^a-zA-Z]')
 llm = None
@@ -29,8 +27,7 @@ def getYesNoResponse(query):
     for i in range(REPEAT_FACTOR):
         responses = []
         try:
-            # response = llm.generate(query + " Instruction: Respond with only 'yes' or 'no'. Do not include any other text or explanation.")  # for yes/no queries, append an extra instruction
-            response = llm.generate(query, "yes/no", FEW_SHOT_NUM, REASONING_TYPE)
+            response = llm.generate(query, "yes/no")
             response = response.replace("\n", " ").lower()
             response = regex.sub('', response)
             responses.append(response)
@@ -51,8 +48,7 @@ def getRadioResponse(query):
     for i in range(REPEAT_FACTOR):
         responses = []
         try:
-            # response = llm.generate(query + " \"Instruction: Respond with only the single letter (a-e) corresponding to the correct option. Do not include any explanation or additional text.\"")
-            response = llm.generate(query, "radio", FEW_SHOT_NUM, REASONING_TYPE)
+            response = llm.generate(query, "radio")
             response = response.replace("\n", " ").lower()
             response = response.replace(".", "")
             response = regex.sub('', response)
@@ -82,8 +78,7 @@ def getCheckboxResponse(query):
     for i in range(REPEAT_FACTOR):
         responses = []
         try:
-            # response = llm.generate(query + " \"Instruction: Respond with only the letters (a-e) separated with comma, corresponding to the correct options. Do not include any explanation or additional text.\"")
-            response = llm.generate(query, "checkbox", FEW_SHOT_NUM, REASONING_TYPE)
+            response = llm.generate(query, "checkbox")
             response = response.replace("\n", " ").lower()
             response = response.replace(".", "")
             response = response.replace(" ", "")
@@ -114,13 +109,10 @@ def main():
     parser.add_argument("-qtype", type=str, help="Query type in file (if all queries have the same type only, for 3 column files)")
     parser.add_argument("-model", type=str, default="meta-llama/Meta-Llama-3.1-8B-Instruct", help="LLM model to load")
     parser.add_argument("-quantize", type=int, default=4, help="Bits to quantize the model to. Options: [4,8]")
-    parser.add_argument("-few_shot", type=int, default=0, help="Few-shot examples to add during inference.")
     args = parser.parse_args()
 
     llm_modelid = args.model
-    FEW_SHOT_NUM = args.few_shot
-    rdf_input_file = "/mnt/newdrive/data_files/SpaTex/CSZt.nt"
-    llm = SparagiRDF(llm_modelid, rdf_input_file, args.quantize)
+    llm = PlainLLM(llm_modelid, args.quantize)
     print(bcolors.GREEN + "Using SPARAGI-RDF LLM" + bcolors.ENDC)
 
     # Load queries
@@ -150,39 +142,43 @@ def main():
             query = row['query']
             truth = row['truth'] if 'truth' in df.columns else ""
             qtype = args.qtype
+            
+        if index % 5 == 0:
+            torch.cuda.empty_cache()
+            
+        if index >= 0:
+            print(bcolors.BLUE + f"Query Type: {qtype}, Query: {query}" + bcolors.ENDC)
 
-        print(bcolors.BLUE + f"Query Type: {qtype}, Query: {query}" + bcolors.ENDC)
+            # Get response
+            if qtype == "yes/no":
+                response = getYesNoResponse(query)
+            elif qtype == "radio":
+                response = getRadioResponse(query)
+            elif qtype == "checkbox":
+                response = getCheckboxResponse(query)
+            else:
+                print(bcolors.WARNING + f"Unknown query type '{qtype}', ignoring..." + bcolors.ENDC)
+                response = "no response"
 
-        # Get response
-        if qtype == "yes/no":
-            response = getYesNoResponse(query)
-        elif qtype == "radio":
-            response = getRadioResponse(query)
-        elif qtype == "checkbox":
-            response = getCheckboxResponse(query)
-        else:
-            print(bcolors.WARNING + f"Unknown query type '{qtype}', ignoring..." + bcolors.ENDC)
-            response = "no response"
+            if isinstance(response, list):
+                response = "; ".join(response)
 
-        if isinstance(response, list):
-            response = "; ".join(response)
+            print(bcolors.RED + "response: " + str(response) + bcolors.ENDC)
 
-        print(bcolors.RED + "response: " + str(response) + bcolors.ENDC)
-
-        # Write single row as DataFrame
-        if col_num == 3:
-            pd.DataFrame([{
-                "type": qtype,
-                "query": query,
-                "truth": truth,
-                "response": response
-            }]).to_csv(output_path, mode='a', index=False, header=False)
-        else:
-            pd.DataFrame([{
-                "query": query,
-                "truth": truth,
-                "response": response
-            }]).to_csv(output_path, mode='a', index=False, header=False)
+            # Write single row as DataFrame
+            if col_num == 3:
+                pd.DataFrame([{
+                    "type": qtype,
+                    "query": query,
+                    "truth": truth,
+                    "response": response
+                }]).to_csv(output_path, mode='a', index=False, header=False)
+            else:
+                pd.DataFrame([{
+                    "query": query,
+                    "truth": truth,
+                    "response": response
+                }]).to_csv(output_path, mode='a', index=False, header=False)
 
     print(f"Generated and saved responses in {time.time() - start:.2f} seconds.")
 
