@@ -1,6 +1,6 @@
 from core.base_index import BaseIndex
 from core.base_cg import BaseCG
-from index.faiss_index import FAISSIndex
+from index.faiss_index import FAISSSubIndex
 
 from utils import INDEX_TYPE
 import rdf_utils
@@ -17,7 +17,7 @@ class RDFGraphIndex(BaseIndex):
         self.graph = Graph()
         self.graph.parse(data_path, format=guess_format(data_path))
         # set the node label index
-        self.node_index = FAISSIndex(data_input=self.graph)
+        self.node_index = FAISSSubIndex(data_input=self.graph)
         # set the context generator
         self.cg_module = cg_module
 

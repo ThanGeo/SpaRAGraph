@@ -14,5 +14,9 @@ class BaseIndex(ABC):
         return self.data_input
 
     @abstractmethod
+    def retrieveK(self, text: str, k: int) -> "list[dict[str, str]]":
+        pass
+
+    @abstractmethod
     def generateContext(self, referenced_entities: str):
         pass

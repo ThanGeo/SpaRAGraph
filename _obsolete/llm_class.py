@@ -735,12 +735,12 @@ class SparagiRDF(LLM):
         elif query_type == "radio":
             self.generateSystemRole()   # reset
             # for radio, do not override the system role. for some reason the instruction works best if paired with the question/options.
-            messages.append({"role": "user", "content": f"Context: {context}"})
-            messages.append({"role": "user", "content": f"{prompt}\nInstruction: Respond with only the single letter (a-e) corresponding to the correct option. Do not include any explanation or additional text."})
+            # messages.append({"role": "user", "content": f"Context: {context}"})
+            # messages.append({"role": "user", "content": f"{prompt}\nInstruction: Respond with only the single letter (a-e) corresponding to the correct option. Do not include any explanation or additional text."})
         
             # for mistral and geocode-gpt, a single user message must be given.
-            # message = f"Context: {context} {prompt}\nInstruction: Respond with only the single letter (a-e) corresponding to the correct option. Do not include any explanation or additional text."
-            # messages.append({"role": "user", "content": f"{message}"})
+            message = f"Context: {context} {prompt}\nInstruction: Respond with only the single letter (a-e) corresponding to the correct option. Do not include any explanation or additional text."
+            messages.append({"role": "user", "content": f"{message}"})
         elif query_type == "checkbox":
             # put instruction in the system role
             # self.system_role = [{"role": "system", "content": "You are a spatial reasoning assistant. Always use the provided context to answer questions accurately. If 'None of the above' is selected, it must be the only selected option. Respond only with the letter(s) of the selected options, separated by commas (e.g., 'a,b,c'). Do not include any explanation or additional text."}]

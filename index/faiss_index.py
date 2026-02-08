@@ -2,12 +2,15 @@
 from core.base_index import BaseIndex
 from utils import INDEX_TYPE
 
+from rdflib.util import guess_format
+
 from rdflib.namespace import RDFS, SKOS
 from rdflib import URIRef, Graph, Literal
 from sentence_transformers import SentenceTransformer
 import faiss
 
-class FAISSIndex(BaseIndex):
+# used as part of SpaRAGraph. Use regular FAISS index for RAG instead
+class FAISSSubIndex(BaseIndex):
     '''
     Uses FAISS to index the node labels of a given graph and 
     offers an interface for similarity matching between text and node labels
@@ -196,3 +199,91 @@ class FAISSIndex(BaseIndex):
 
     def generateContext(self, paths: "list[list[(str,str,str)]]") -> str:
         pass
+
+
+class FAISSIndex(BaseIndex):
+    def __init__(self, data_input, model_id="all-MiniLM-L6-v2"):
+        # set properties
+        super().__init__(data_input, INDEX_TYPE.FAISS)
+        # model
+        self.model = SentenceTransformer(model_id)
+        # create graph
+        self.uri_to_text = {}  # Cache for URI to text mappings
+        self.triples = []
+        self.triple_texts = []  # Fixed: was self.triples_texts
+        self.graph = Graph()  # Fixed: renamed for clarity
+        self.graph.parse(data_input, format=guess_format(data_input))
+        # index the data
+        if isinstance(self.graph, Graph):
+            self.indexGraph(self.graph)
+        else:
+            raise ValueError("Unsupported data input for FAISS index: ", type(data_input))
+    
+    def indexGraph(self, graph: Graph):
+        """Index RDF triples as 'subject predicate object' sentences."""
+        texts = []
+        for s, p, o in graph:
+            s_text = self._get_text_for_uri(graph, s)
+            p_text = self._get_text_for_uri(graph, p)
+            o_text = self._get_text_for_uri(graph, o)
+            if not s_text or not p_text or not o_text:
+                continue
+            triple_sentence = f"{s_text} {p_text} {o_text}"
+            self.triples.append((s, p, o))  # Keep original URIs
+            self.triples_text_tuples = getattr(self, 'triples_text_tuples', [])  # Store text tuples
+            self.triples_text_tuples.append((s_text, p_text, o_text))
+            self.triple_texts.append(triple_sentence)
+            texts.append(triple_sentence)
+        
+        if not texts:
+            raise ValueError("No indexable triples found.")
+        
+        embeddings = self.model.encode(texts, convert_to_tensor=True).cpu().numpy()
+        dimension = embeddings.shape[1]
+        self.index = faiss.IndexFlatIP(dimension)
+        faiss.normalize_L2(embeddings)
+        self.index.add(embeddings)
+        print(f"Indexed {len(self.triples)} RDF triples.")
+    
+    def _get_text_for_uri(self, graph, uri):
+        uri_str = str(uri)
+
+        # Cache check
+        if uri_str in self.uri_to_text:
+            return self.uri_to_text[uri_str]
+
+        texts = []
+
+        # 1️⃣ Try labels first
+        for label_prop in [RDFS.label, SKOS.prefLabel]:
+            for label in graph.objects(uri, label_prop):
+                if isinstance(label, Literal):
+                    texts.append(str(label).replace("_", " "))
+
+        # 2️⃣ Fallback: URI local name
+        if not texts and isinstance(uri, URIRef):
+            local = uri_str.split("/")[-1].split("#")[-1]
+            local = local.replace("_", " ")   # 🔥 THIS is what you were missing
+            texts.append(local)
+
+        # 3️⃣ Literal URIs (objects that are literals)
+        if isinstance(uri, Literal):
+            texts.append(str(uri).replace("_", " "))
+
+        result = " ".join(texts) if texts else None
+
+        if result:
+            self.uri_to_text[uri_str] = result
+
+        return result
+
+    
+    def retrieveK(self, text: str, k: int) -> "list[str]":
+        query_embedding = self.model.encode([text], convert_to_tensor=True).cpu().numpy()
+        faiss.normalize_L2(query_embedding)
+        distances, indices = self.index.search(query_embedding, k)
+        
+        return [self.triple_texts[idx] for idx in indices[0]]
+    
+    def generateContext(self, triples: "list[list[(str,str,str)]]") -> str:
+        return "\n".join(triples) if triples else None

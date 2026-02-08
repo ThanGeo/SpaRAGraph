@@ -1,7 +1,7 @@
 from core.base_fewshot import BaseFewShot
 from utils import FEW_SHOT_TYPE
 
-from index.faiss_index import FAISSIndex
+from index.faiss_index import FAISSSubIndex
 
 fewshot_examples = [
 
@@ -139,7 +139,7 @@ fewshot_examples = [
 class ANNFewShot(BaseFewShot):
     def __init__(self, model_id="all-MiniLM-L6-v2"):
         super().__init__(FEW_SHOT_TYPE.ANN_SIMILAR)
-        self.index = FAISSIndex(fewshot_examples, model_id)
+        self.index = FAISSSubIndex(fewshot_examples, model_id)
     
     def getKshot(self, text: str, k: int):
         examples = self.index.retrieveK(text, k)
