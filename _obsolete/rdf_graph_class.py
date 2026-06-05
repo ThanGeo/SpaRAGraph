@@ -377,7 +377,7 @@ class RDFGraphIndexer:
 
 # Example Usage
 # if __name__ == "__main__":
-#     graph_indexer = RDFGraphIndexer("/mnt/newdrive/data_files/SpaTex/CSZt.nt")
+#     graph_indexer = RDFGraphIndexer("datasets/CSZt.nt")
 #     print("Graph loaded")
 #     graph_indexer.build_index()
     

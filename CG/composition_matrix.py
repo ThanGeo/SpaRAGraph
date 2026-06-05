@@ -11,6 +11,7 @@ class ApproximateCM(BaseCM):
     ''' 
     def __init__(self) -> None:
         super().__init__(CM_TYPE.APPROXIMATE)
+        self.uncertainCasesList = []
 
         # ???
         self.uncertain_cases = {

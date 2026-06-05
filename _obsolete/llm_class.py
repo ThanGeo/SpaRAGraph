@@ -805,7 +805,7 @@ class SparagiRDF(LLM):
         else:
             self.bnb_config = BitsAndBytesConfig()
         # RDF GRAPH INDED
-        self.graph_indexer = RDFGraphIndexer("/mnt/newdrive/data_files/SpaTex/CSZt.nt")
+        self.graph_indexer = RDFGraphIndexer("datasets/CSZt.nt")
         self.graph_indexer.build_index()
         # NER using spaCy
         self.entity_extractor = GeoEntityExtractor()

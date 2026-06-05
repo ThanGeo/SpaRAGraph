@@ -70,10 +70,13 @@ class RDFGraphIndex(BaseIndex):
                     all_paths.append(path)
         return all_paths
 
+    def retrieveK(self, text: str, k: int):
+        raise NotImplementedError("RDFGraphIndex uses graph traversal, not embedding retrieval. Use FAISSIndex for retrieveK.")
+
     def generateContext(self, referenced_entities):
         # find start/end points in graph
         pairs = self.node_index.find_start_end_pairs(referenced_entities)
-        
+
         # get the shortest paths between the pairs
         paths = self._get_paths(pairs)
 

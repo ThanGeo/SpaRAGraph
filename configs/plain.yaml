@@ -1,0 +1,8 @@
+mode: PLAIN
+model: meta-llama/Meta-Llama-3.1-8B-Instruct
+query_dataset: queries/queries_yesno_1.csv
+qtype: yes/no
+result_path: out.csv
+quantize: 4
+device: auto
+verbose: true

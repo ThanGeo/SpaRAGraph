@@ -119,7 +119,7 @@ def main():
 
     llm_modelid = args.model
     FEW_SHOT_NUM = args.few_shot
-    rdf_input_file = "/mnt/newdrive/data_files/SpaTex/CSZt.nt"
+    rdf_input_file = "datasets/CSZt.nt"
     llm = SparagiRDF(llm_modelid, rdf_input_file, args.quantize)
     print(bcolors.GREEN + "Using SPARAGI-RDF LLM" + bcolors.ENDC)
 

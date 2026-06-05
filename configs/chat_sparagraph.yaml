@@ -1,0 +1,7 @@
+mode: SPARAGRAPH
+model: meta-llama/Meta-Llama-3.1-8B-Instruct
+rdf_dataset: datasets/CSZt.nt
+quantize: 4
+few_shot: 0
+device: auto
+verbose: true
