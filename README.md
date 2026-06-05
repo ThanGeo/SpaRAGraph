@@ -69,6 +69,24 @@ SpaRAGraph/
 
 The dataset (`datasets/CSZt.nt`) was generated with [SpaTex](https://github.com/ThanGeo/SpaTex---Spatial-To-Text-data-toolkit). Query files are from [The Spatial Reasoning Benchmark](https://huggingface.co/datasets/Rammen/SpatialReasoning) ([GitHub](https://github.com/ThanGeo/spatial-inference-benchmark)).
 
+## Testing
+
+After following the setup steps above, verify everything is working:
+
+```bash
+python test.py
+```
+
+This runs ~19 component tests covering imports, dataset/config files, NER, graph loading, FAISS indexing, few-shot retrieval, and response parsing — no model download required.
+
+To also verify full end-to-end inference (downloads TinyLlama, ~1 GB):
+
+```bash
+python test.py --inference
+python test.py --inference --model meta-llama/Meta-Llama-3.1-8B-Instruct  # gated model
+python test.py --inference --device cpu  # force CPU
+```
+
 ## Usage
 
 All runs go through `runBenchmark.py` with a YAML config file:
