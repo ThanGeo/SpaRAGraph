@@ -1,10 +1,9 @@
 
 from core.base_index import BaseIndex
 from utils import INDEX_TYPE
+import rdf_utils
 
 from rdflib.util import guess_format
-
-from rdflib.namespace import RDFS, SKOS
 from rdflib import URIRef, Graph, Literal
 from sentence_transformers import SentenceTransformer
 import faiss
@@ -90,20 +89,7 @@ class FAISSSubIndex(BaseIndex):
     
 
     def _get_text_for_uri(self, graph, uri):
-        """Extract text from URI itself if no labels exist (for .nt files)."""
-        texts = []
-        # Try standard labels first
-        for label_prop in [RDFS.label, SKOS.prefLabel]:
-            for label in graph.objects(uri, label_prop):
-                if isinstance(label, Literal):
-                    texts.append(str(label))
-        
-        # Fallback: Use the URI's local name (last path segment)
-        if not texts and isinstance(uri, URIRef):
-            uri_str = str(uri)
-            texts.append(uri_str.split("/")[-1].split("#")[-1])  # Get '66423' from '.../66423'
-        
-        return " ".join(texts) if texts else None  # Return None if no text at all
+        return rdf_utils.uri_label(graph, uri) or None
     
     def retrieveK(self, text: str, k: int) -> "list[dict[str, str]]":
         query_embedding = self.model.encode(text, convert_to_tensor=True).cpu().numpy()
@@ -247,34 +233,11 @@ class FAISSIndex(BaseIndex):
     
     def _get_text_for_uri(self, graph, uri):
         uri_str = str(uri)
-
-        # Cache check
         if uri_str in self.uri_to_text:
             return self.uri_to_text[uri_str]
-
-        texts = []
-
-        # 1️⃣ Try labels first
-        for label_prop in [RDFS.label, SKOS.prefLabel]:
-            for label in graph.objects(uri, label_prop):
-                if isinstance(label, Literal):
-                    texts.append(str(label).replace("_", " "))
-
-        # 2️⃣ Fallback: URI local name
-        if not texts and isinstance(uri, URIRef):
-            local = uri_str.split("/")[-1].split("#")[-1]
-            local = local.replace("_", " ")   # 🔥 THIS is what you were missing
-            texts.append(local)
-
-        # 3️⃣ Literal URIs (objects that are literals)
-        if isinstance(uri, Literal):
-            texts.append(str(uri).replace("_", " "))
-
-        result = " ".join(texts) if texts else None
-
+        result = rdf_utils.uri_label(graph, uri) or None
         if result:
             self.uri_to_text[uri_str] = result
-
         return result
 
     

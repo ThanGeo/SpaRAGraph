@@ -35,6 +35,12 @@ class RDFGraphIndex(BaseIndex):
         queue = deque()
         visited = set()
 
+        # Resolve the traversal filter from the CG module (if it defines one).
+        # This prevents the BFS from following unknown/unregistered predicates
+        # (e.g. rdf:type, owl:sameAs) that are not part of any RelationFamily,
+        # which would otherwise produce nonsensical multi-hop paths.
+        traversal_filter = getattr(self.cg_module, "is_traversable", None)
+
         # Each item in queue: (current_node, path_so_far)
         queue.append((startLabel, []))
 
@@ -50,7 +56,8 @@ class RDFGraphIndex(BaseIndex):
 
             for _, p, o in self.graph.triples((current, None, None)):
                 if isinstance(o, URIRef):
-                    queue.append((o, path + [(current, p, o)]))
+                    if traversal_filter is None or traversal_filter(rdf_utils.get_local_name(p)):
+                        queue.append((o, path + [(current, p, o)]))
 
         return None
 

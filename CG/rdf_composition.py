@@ -10,6 +10,12 @@ class RDF_Composition(BaseCG):
         super().__init__(CG_TYPE.RDF_COMPOSITION)
         self.cm = cm
 
+    def is_traversable(self, predicate: str) -> bool:
+        """Delegate to the CM's traversal filter (if it has one)."""
+        if hasattr(self.cm, "is_traversable"):
+            return self.cm.is_traversable(predicate)
+        return True
+
     def generateContext(self, paths: "list[list[(str,str,str)]]") -> str:
         context = ""
         for path in paths:
